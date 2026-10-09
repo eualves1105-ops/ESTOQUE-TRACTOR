@@ -112,9 +112,25 @@
       <div class="grid">
         <div class="col-12"><label>E-mail</label><input id="syncEmail" type="email" autocomplete="username" placeholder="voce@empresa.com"></div>
         <div class="col-12"><label>Senha</label><input id="syncPassword" type="password" autocomplete="current-password" placeholder="Senha da conta"></div>
-        <div class="col-12" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" onclick="syncSignIn()">Entrar</button><button class="btn" type="button" onclick="syncSignUp()">Criar conta</button><button class="btn" type="button" onclick="syncSignOut()">Sair</button><button class="btn" type="button" onclick="closeSyncPanel()">Fechar</button></div>
+        <div class="col-12" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" onclick="syncSignIn()">Entrar</button><button class="btn" type="button" onclick="requestPasswordRecovery()">Esqueci minha senha</button><button class="btn" type="button" onclick="syncSignUp()">Criar conta</button><button class="btn" type="button" onclick="syncSignOut()">Sair</button><button class="btn" type="button" onclick="closeSyncPanel()">Fechar</button></div>
         <div class="col-12"><small class="hint">A sincronização só será ativada após inserir a URL e a chave pública (anon/publishable) no arquivo supabase-config.js e executar supabase-schema.sql no seu projeto Supabase. Nunca coloque a chave service_role aqui.</small></div>
       </div>
+    </div>
+    <div id="passwordRecoveryPanel" class="panel" style="display:none;max-width:560px;margin:20px auto;padding:18px">
+      <h3>Redefinir senha</h3>
+      <p class="hint">Digite e confirme sua nova senha para acessar a sincronização.</p>
+      <label>E-mail</label>
+      <input id="recoveryEmail" type="email" autocomplete="username" placeholder="tractorpartsestoque@gmail.com">
+      <label style="display:block;margin-top:12px">Nova senha</label>
+      <input id="newPassword" type="password" autocomplete="new-password" placeholder="Digite a nova senha">
+      <label style="display:block;margin-top:12px">Confirmar nova senha</label>
+      <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Digite a nova senha novamente">
+      <div class="actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" type="button" onclick="saveNewPassword()">Salvar nova senha</button>
+        <button class="btn" type="button" onclick="resendPasswordRecovery()">Enviar novo e-mail</button>
+        <button class="btn" type="button" onclick="hidePasswordRecovery()">Fechar</button>
+      </div>
+      <p id="recoveryMessage" class="hint" role="status" aria-live="polite"></p>
     </div>
     <section id="home" class="view active">
       <div class="hero">
@@ -254,8 +270,68 @@ function initCloud(){
  if(!window.supabase){setSyncStatus('Carregando conexão segura…');setTimeout(()=>{if(window.supabase)initCloud();else setSyncStatus('Não foi possível carregar a conexão. Verifique a internet e recarregue.');},1200);return}
  cloud=window.supabase.createClient(window.SUPABASE_CONFIG.url,window.SUPABASE_CONFIG.anonKey);
  cloud.auth.getSession().then(({data,error})=>{if(error){setSyncStatus('Erro ao verificar sessão');return} if(data.session) connectCloud(data.session.user); else setSyncStatus('Supabase configurado — entre para sincronizar')});
- cloud.auth.onAuthStateChange((_event,session)=>{if(session?.user) connectCloud(session.user); else {cloudUser=null;cloudReady=false;if(cloudChannel){cloud.removeChannel(cloudChannel);cloudChannel=null}setSyncStatus('Desconectado — dados locais neste aparelho')}});
+ cloud.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){
+    showPasswordRecovery();
+    return;
+  }
+  if(session?.user){
+    if(event==='USER_UPDATED') hidePasswordRecovery();
+    connectCloud(session.user);
+  }else{
+    cloudUser=null;cloudReady=false;
+    if(cloudChannel){cloud.removeChannel(cloudChannel);cloudChannel=null}
+    setSyncStatus('Desconectado — dados locais neste aparelho');
+  }
+});
 }
+function showPasswordRecovery(){
+  const panel=$('passwordRecoveryPanel');
+  if(!panel)return;
+  panel.style.display='block';
+  const syncPanel=$('syncPanel');
+  if(syncPanel)syncPanel.style.display='none';
+  const email=$('recoveryEmail');
+  if(email&&!email.value)email.value=cloudUser?.email||$('syncEmail').value.trim();
+  enterApp();
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+function hidePasswordRecovery(){
+  const panel=$('passwordRecoveryPanel');
+  if(panel)panel.style.display='none';
+}
+async function requestPasswordRecovery(){
+  if(!cloud){toast('A conexão ainda está carregando. Recarregue a página e tente novamente.');return}
+  const email=$('syncEmail').value.trim();
+  if(!email){toast('Digite seu e-mail no campo E-mail antes de clicar.');$('syncEmail').focus();return}
+  const {error}=await cloud.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){toast('Não foi possível enviar: '+error.message);return}
+  toast('E-mail de recuperação enviado. Abra o link mais recente.');
+}
+async function resendPasswordRecovery(){
+  if(!cloud){$('recoveryMessage').textContent='Conexão indisponível. Recarregue a página.';return}
+  const email=$('recoveryEmail').value.trim();
+  const message=$('recoveryMessage');
+  if(!email){message.textContent='Digite seu e-mail.';return}
+  const {error}=await cloud.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  message.textContent=error?'Erro: '+error.message:'E-mail enviado. Use somente o link mais recente recebido.';
+}
+async function saveNewPassword(){
+  if(!cloud){$('recoveryMessage').textContent='Conexão indisponível. Recarregue a página.';return}
+  const password=$('newPassword').value;
+  const confirmation=$('confirmNewPassword').value;
+  const message=$('recoveryMessage');
+  if(password.length<8){message.textContent='A senha precisa ter pelo menos 8 caracteres.';return}
+  if(password!==confirmation){message.textContent='As senhas não são iguais.';return}
+  const {error}=await cloud.auth.updateUser({password});
+  if(error){message.textContent='Erro ao salvar: '+error.message;return}
+  $('newPassword').value='';$('confirmNewPassword').value='';
+  message.textContent='Senha alterada com sucesso. Agora entre com a nova senha.';
+  toast('Senha alterada com sucesso.');
+  hidePasswordRecovery();
+  openSyncPanel();
+}
+
 async function syncSignIn(){if(!cloud){toast('Configure primeiro o supabase-config.js e atualize a página.');return}const email=$('syncEmail').value.trim(),password=$('syncPassword').value;if(!email||!password){toast('Informe e-mail e senha.');return}const {error}=await cloud.auth.signInWithPassword({email,password});if(error)toast('Falha no login: '+error.message);else toast('Login realizado.')}
 async function syncSignUp(){if(!cloud){toast('Configure primeiro o supabase-config.js e atualize a página.');return}const email=$('syncEmail').value.trim(),password=$('syncPassword').value;if(!email||password.length<8){toast('Informe e-mail e senha com pelo menos 8 caracteres.');return}const {error}=await cloud.auth.signUp({email,password});if(error)toast('Falha ao criar conta: '+error.message);else toast('Conta solicitada. Se a confirmação por e-mail estiver ativa, confirme antes de entrar.')}
 async function syncSignOut(){if(cloud)await cloud.auth.signOut();cloudUser=null;cloudReady=false;setSyncStatus('Desconectado — dados locais neste aparelho')}
@@ -401,6 +477,12 @@ function renderAll(){renderSelects();renderSellers();renderSuppliers();renderMon
 renderAll();
 try{if(sessionStorage.getItem('estoque_splash_seen')==='1')$('splashScreen').style.display='none';else setTimeout(enterApp,10000)}catch(e){setTimeout(enterApp,10000)}
 initCloud();
+try{
+  const hash=window.location.hash||'';
+  if(hash.includes('error_code=otp_expired')||hash.includes('error=access_denied')){
+    setTimeout(()=>{openSyncPanel();toast('O link de recuperação expirou ou já foi usado. Solicite um novo e-mail e abra o link mais recente.');},300);
+  }
+}catch(e){}
 </script>
 </body>
 </html>
