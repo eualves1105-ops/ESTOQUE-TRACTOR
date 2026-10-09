@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ESTOQUE">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>ESTOQUE — Controle de Locação</title>
+  <link rel="icon" href="logo.png">
+  <style>
+    :root{
+      --bg:#05070b; --panel:#0b1018; --panel2:#0e1622; --blue:#062d63;
+      --blue2:#0b4da2; --orange:#ff9d2e; --text:#f5f7fb; --muted:#9ca9bb;
+      --line:#1c2939; --green:#1eb980; --red:#ef5350; --shadow:0 16px 40px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    html{width:100%;min-height:100%;background:#03070d;-webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-x:none} body{margin:0;background:radial-gradient(circle at 20% 0%,#0b2850 0,#05070b 34%);color:var(--text);font:14px/1.45 Inter,Segoe UI,Arial,sans-serif;min-height:100vh;min-height:100dvh;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{display:flex;height:100vh;height:100dvh;min-height:0;overflow:hidden}
+    aside{width:250px;background:#05080d;border-right:1px solid var(--line);padding:22px 16px;position:fixed;inset:0 auto 0 0;z-index:10}
+    .brand{display:flex;align-items:center;gap:12px;padding:6px 8px 24px;border-bottom:1px solid var(--line);margin-bottom:18px}
+    .brand img{width:52px;height:52px;object-fit:cover;border-radius:10px}
+    .brand strong{font-size:21px;letter-spacing:.08em}
+    .brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+    nav button{width:100%;border:0;background:transparent;color:#b9c4d2;text-align:left;padding:12px 13px;border-radius:10px;margin:3px 0;transition:.2s}
+    nav button:hover,nav button.active{background:#0c2343;color:#fff}
+    nav button.active{box-shadow:inset 3px 0 var(--orange)}
+    main{margin-left:250px;width:calc(100% - 250px);padding:28px;max-width:1500px;height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior:contain}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:16px}
+    h1{margin:0;font-size:28px}.subtitle{color:var(--muted);margin-top:4px}
+    .view{display:none}.view.active{display:block}
+    .hero{min-height:calc(100vh - 56px);display:grid;place-items:center}
+    .hero-card{width:min(900px,100%);background:linear-gradient(145deg,rgba(7,43,91,.95),rgba(7,12,20,.98));border:1px solid #174b87;border-radius:24px;padding:54px;box-shadow:var(--shadow);text-align:center}
+    .hero-card img{width:min(420px,80%);max-height:240px;object-fit:contain;border-radius:12px}
+    .hero-card h2{font-size:44px;margin:22px 0 4px;letter-spacing:.08em}.hero-card p{color:#b8c7da;font-size:16px}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .card{background:linear-gradient(145deg,#0d141e,#090e15);border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow)}
+    .stat .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.stat .value{font-size:30px;font-weight:700;margin-top:8px}
+    .panel{background:#0a0f16;border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:18px}
+    .panel h3{margin:0 0 16px;font-size:16px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+    label{display:block;color:#bdc8d7;font-size:12px;margin-bottom:6px}input,select{width:100%;background:#070b11;border:1px solid #263548;color:#fff;padding:11px 12px;border-radius:9px;outline:none}input:focus,select:focus{border-color:#2e74c5;box-shadow:0 0 0 3px rgba(46,116,197,.13)}
+    .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.btn{border:1px solid #29415e;background:#101b2a;color:#eaf1fa;padding:10px 14px;border-radius:9px}.btn:hover{background:#15253a}.btn.primary{background:#0b4da2;border-color:#1764c5}.btn.danger{border-color:#693031;color:#ffb0ae}.btn.small{padding:7px 10px;font-size:12px}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}.table{width:100%;border-collapse:collapse;min-width:800px}.table th,.table td{padding:12px 13px;border-bottom:1px solid var(--line);text-align:left}.table th{font-size:11px;text-transform:uppercase;color:#93a2b5;letter-spacing:.06em;background:#0d141e}.table tr:last-child td{border-bottom:0}
+    .status{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}.status.ok{background:rgba(30,185,128,.13);color:#62e3b4}.status.no{background:rgba(239,83,80,.13);color:#ff8986}
+    .status button{border:0;background:transparent;color:inherit;font-weight:700}
+    .empty{text-align:center;padding:30px;color:var(--muted)}
+    .monthbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.monthbar>div{min-width:180px}
+    .hint{color:var(--muted);font-size:12px}.toast{position:fixed;right:24px;bottom:24px;background:#12243a;border:1px solid #275486;padding:12px 16px;border-radius:10px;box-shadow:var(--shadow);display:none;z-index:30}
+
+    .hero-card{position:relative;overflow:hidden}
+    .hero-card:before{content:"";position:absolute;width:480px;height:480px;border-radius:50%;background:rgba(19,86,160,.18);filter:blur(4px);top:-260px;right:-170px}
+    .hero-kicker{position:relative;color:#ff9d2e;font-size:11px;font-weight:800;letter-spacing:.22em;margin-bottom:22px}
+    .hero-lead{font-size:18px!important;max-width:560px;margin:8px auto!important;color:#dce7f4!important}
+    .hero-line{height:2px;background:linear-gradient(90deg,transparent,#ff9d2e,#1d68b9,transparent);margin:24px auto;width:70%}
+    .hero-metrics{display:flex;justify-content:center;gap:42px;margin-top:22px}.hero-metrics div{display:flex;flex-direction:column}.hero-metrics b{font-size:24px}.hero-metrics span{font-size:10px;text-transform:uppercase;color:#8292a7;letter-spacing:.08em}
+    .hero-btn{font-weight:800;letter-spacing:.02em}
+    .launch-panel{position:relative;overflow:hidden}.launch-accent{position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#ff9d2e,#0b4da2)}
+    .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.flow>div{background:#0d151f;border:1px solid var(--line);border-radius:12px;padding:16px}.flow span{color:var(--orange);font-weight:800;font-size:12px}.flow b{display:block;margin:5px 0}.flow small{color:var(--muted)}
+    .search-panel{background:linear-gradient(145deg,#0d1622,#090e15)}.search-row{display:flex;align-items:center;gap:10px;background:#070b11;border:1px solid #2a3c52;border-radius:11px;padding:0 10px}.search-row span{font-size:22px;color:#8ca0b8}.search-row input{border:0;background:transparent;padding:14px 4px}.search-row input:focus{box-shadow:none}.search-chips{display:flex;gap:7px;margin-top:10px}.search-chips button{border:1px solid #26384e;background:#0d1723;color:#aebdd0;border-radius:999px;padding:6px 10px;font-size:11px}
+    @media(max-width:700px){.hero-metrics{gap:15px}.hero-metrics span{font-size:8px}.flow{grid-template-columns:1fr}.search-row{flex-wrap:wrap}.search-row input{min-width:0}}
+
+
+    .report-panel{background:linear-gradient(145deg,#0d1622,#090e15);border-color:#23486f}.report-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.urgent-row{background:rgba(239,83,80,.08)!important}.urgent-status{background:rgba(239,83,80,.18);color:#ff706c;border:1px solid rgba(239,83,80,.35)}.urgent-label{font-weight:900;letter-spacing:.06em}.report-table{width:100%;border-collapse:collapse}.report-table th,.report-table td{padding:9px;border-bottom:1px solid #ddd;text-align:left;font-size:12px}.report-table th{background:#f0f2f5}
+    @media print{body{background:#fff;color:#111}.app aside,.mobile-menu,main{display:none!important}.print-area{display:block!important}}
+
+    .mobile-menu{display:none}
+    .splash{position:fixed;top:-12vh;right:-8vw;bottom:-12vh;left:-8vw;z-index:1000;display:grid;place-items:center;overflow:hidden;background-color:#03070d;background-image:url('wallpaper-estoque.png');background-repeat:no-repeat;background-position:center center;background-size:cover;transform:translateZ(0) scale(1.02);transform-origin:center center;will-change:opacity;min-height:124vh;padding:0;margin:0}
+    .splash:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(2,9,20,.78),rgba(3,24,53,.72),rgba(0,0,0,.86))}
+    .splash-card{position:relative;z-index:1;text-align:center;width:min(560px,90vw);padding:28px 22px;border:1px solid rgba(255,255,255,.18);border-radius:24px;background:rgba(3,10,20,.45);backdrop-filter:blur(8px);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+    .splash-card img{width:min(260px,70vw);height:180px;object-fit:contain;filter:drop-shadow(0 8px 28px rgba(0,0,0,.4))}
+    .splash-card h1{font-size:clamp(30px,7vw,48px);letter-spacing:.12em;margin:12px 0 0}.splash-card p{color:#d2dfef;letter-spacing:.1em;text-transform:uppercase;font-size:11px;margin:8px 0 24px}
+    .splash-enter{display:none}
+    .view-fixed{position:relative}
+    .loc-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}.plus-button{width:46px;height:46px;border-radius:13px;border:1px solid #3474b8;background:#0b4da2;color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+    .loc-items{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.loc-items h4{margin:0 0 8px}.loc-item-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.loc-item-row:last-child{border-bottom:0}.loc-item-row>div{min-width:0}.loc-item-row .hint{margin-top:3px}
+    .loc-card{background:linear-gradient(145deg,#0d1622,#090e15);border:1px solid var(--line);border-radius:13px;padding:0;margin-bottom:12px;overflow:hidden}.loc-card h3{margin:0 0 10px}.loc-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px 16px}.loc-details span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase}.loc-details b{display:block;overflow-wrap:anywhere;margin-top:4px}
+    .location-folder{border:1px solid #244568;border-radius:13px;background:linear-gradient(145deg,#0b1522,#080d14);margin:0 0 12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+    .location-folder summary{list-style:none;display:flex;align-items:center;gap:12px;cursor:pointer;padding:16px;background:linear-gradient(100deg,rgba(11,77,162,.22),rgba(8,15,25,.8));user-select:none}
+    .location-folder summary::-webkit-details-marker{display:none}.folder-icon{font-size:28px;flex:0 0 auto}.folder-heading{min-width:0;flex:1}.folder-title{display:block;font-weight:800;font-size:15px;overflow-wrap:anywhere}.folder-meta{display:block;color:var(--muted);font-size:12px;margin-top:4px}.folder-count{border:1px solid #315b86;background:#0a1d33;border-radius:999px;padding:5px 9px;font-size:12px;white-space:nowrap}.folder-chevron{color:#9cb7d7;font-size:16px;transition:transform .18s}.location-folder[open] .folder-chevron{transform:rotate(90deg)}.folder-content{padding:0 14px 14px}.folder-code{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.folder-code b{color:#ffbd69;font-size:14px;overflow-wrap:anywhere}.folder-content .loc-items{margin-top:8px}.folder-content .loc-details{padding:12px 0}.folder-empty{padding:12px;color:var(--muted);font-size:13px}
+    @media(max-width:700px){.loc-details{grid-template-columns:1fr}.splash{top:-15vh;right:-10vw;bottom:-15vh;left:-10vw;min-height:130vh;background-size:cover;background-position:center center;transform:translateZ(0) scale(1.03)}}
+
+    @media(max-width:1000px){aside{width:210px}main{margin-left:210px;width:calc(100% - 210px)}.cards{grid-template-columns:repeat(2,1fr)}.col-3,.col-4{grid-column:span 6}}
+    @media(max-width:700px){html,body{height:100%;overflow:hidden} .app{height:100dvh;min-height:0;overflow:hidden} aside{display:none;position:fixed;inset:0 auto 0 0;width:min(290px,85vw);height:100dvh;overflow-y:auto;z-index:25;box-shadow:15px 0 45px rgba(0,0,0,.65)}aside.open{display:block}.mobile-menu{display:block;position:fixed;top:calc(env(safe-area-inset-top, 0px) + 54px);left:12px;z-index:30}.mobile-menu button{background:#0c2343;border:1px solid #174b87;color:white;border-radius:9px;padding:9px 12px}main{margin:0;width:100%;height:100dvh;overflow-y:auto;overscroll-behavior:contain;padding:65px 14px 20px}.cards{grid-template-columns:1fr 1fr}.col-3,.col-4,.col-6,.col-8{grid-column:span 12}.hero{min-height:calc(100dvh - 85px)}.hero-card{padding:30px 18px}.hero-card h2{font-size:32px}}
+  </style>
+</head>
+<body>
+<div id="splashScreen" class="splash" role="img" aria-label="Tela de abertura ESTOQUE Tractor Parts"></div>
+<div class="mobile-menu"><button onclick="toggleSidebar()">☰ Menu</button></div>
+<div class="app">
+  <aside id="sidebar">
+    <div class="brand"><img src="logo.png" alt="Tractor Parts"><div><strong>ESTOQUE</strong><small>Controle de Locação</small></div></div>
+    <nav>
+      <button data-view="home" class="active">⌂ Início</button>
+      <button data-view="newitem">＋ Novo lançamento</button>
+      <button data-view="locations">▦ Locações</button>
+      <button data-view="items">▣ Itens adicionados</button>
+      <button data-view="reports">▤ Relatórios</button>
+      <button data-view="sellers">♙ Vendedores</button>
+      <button data-view="suppliers">▤ Fornecedores</button>
+    </nav>
+  </aside>
+
+  <main>
+    <div id="syncBar" style="position:sticky;top:0;z-index:15;display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:8px 12px;background:#0b111a;border:1px solid #26384e;border-radius:10px;margin-bottom:12px;flex-wrap:wrap">
+      <span id="syncStatus" style="font-size:12px;color:#aebdd0">Modo local — sincronização ainda não configurada</span>
+      <button id="syncAccountBtn" class="btn small" type="button" onclick="openSyncPanel()">Configurar sincronização</button>
+    </div>
+    <div id="syncPanel" class="panel" style="display:none;max-width:560px;margin:0 auto 18px">
+      <h3>Sincronização entre PC e iPhone</h3>
+      <p class="hint">Configure o Supabase e entre com o mesmo e-mail nos dois dispositivos. A primeira conexão pode importar os dados locais para a nuvem.</p>
+      <div class="grid">
+        <div class="col-12"><label>E-mail</label><input id="syncEmail" type="email" autocomplete="username" placeholder="voce@empresa.com"></div>
+        <div class="col-12"><label>Senha</label><input id="syncPassword" type="password" autocomplete="current-password" placeholder="Senha da conta"></div>
+        <div class="col-12" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" onclick="syncSignIn()">Entrar</button><button class="btn" type="button" onclick="requestPasswordRecovery()">Esqueci minha senha</button><button class="btn" type="button" onclick="syncSignUp()">Criar conta</button><button class="btn" type="button" onclick="syncSignOut()">Sair</button><button class="btn" type="button" onclick="closeSyncPanel()">Fechar</button></div>
+        <div class="col-12"><small class="hint">A sincronização só será ativada após inserir a URL e a chave pública (anon/publishable) no arquivo supabase-config.js e executar supabase-schema.sql no seu projeto Supabase. Nunca coloque a chave service_role aqui.</small></div>
+      </div>
+    </div>
+    <div id="passwordRecoveryPanel" class="panel" style="display:none;max-width:560px;margin:20px auto;padding:18px">
+      <h3>Redefinir senha</h3>
+      <p class="hint">Digite e confirme sua nova senha para acessar a sincronização.</p>
+      <label>E-mail</label>
+      <input id="recoveryEmail" type="email" autocomplete="username" placeholder="tractorpartsestoque@gmail.com">
+      <label style="display:block;margin-top:12px">Nova senha</label>
+      <input id="newPassword" type="password" autocomplete="new-password" placeholder="Digite a nova senha">
+      <label style="display:block;margin-top:12px">Confirmar nova senha</label>
+      <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Digite a nova senha novamente">
+      <div class="actions" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" type="button" onclick="saveNewPassword()">Salvar nova senha</button>
+        <button class="btn" type="button" onclick="resendPasswordRecovery()">Enviar novo e-mail</button>
+        <button class="btn" type="button" onclick="hidePasswordRecovery()">Fechar</button>
+      </div>
+      <p id="recoveryMessage" class="hint" role="status" aria-live="polite"></p>
+    </div>
+    <section id="home" class="view active">
+      <div class="hero">
+        <div class="hero-card">
+          <div class="hero-kicker">TRACTOR PARTS • OPERAÇÃO & CONTROLE</div>
+          <img src="logo.png" alt="Logo Tractor Parts">
+          <h2>ESTOQUE</h2>
+          <p class="hero-lead">Controle de locação com precisão, velocidade e presença.</p>
+          <div class="hero-line"></div>
+          <div class="hero-metrics">
+            <div><b id="heroItems">0</b><span>Itens registrados</span></div>
+            <div><b id="heroPending">0</b><span>Aguardando retirada</span></div>
+            <div><b id="heroTaken">0</b><span>Retirados</span></div>
+          </div>
+          <div class="actions" style="justify-content:center;margin-top:28px">
+            <button class="btn primary hero-btn" onclick="showView('newitem')">＋ Novo lançamento</button>
+            <button class="btn hero-btn" onclick="showView('items')">Consultar itens →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="newitem" class="view">
+      <div class="topbar"><div><h1>Novo lançamento</h1><div class="subtitle">Registre uma nova locação de forma rápida e organizada.</div></div></div>
+      <div class="panel launch-panel">
+        <div class="launch-accent"></div>
+        <h3>Dados do lançamento</h3>
+        <form id="itemForm" class="grid">
+          <div class="col-4"><label>Vendedor</label><select id="sellerSelect" required></select></div>
+          <div class="col-4"><label>Fornecedor</label><select id="supplierSelect" required></select></div>
+          <div class="col-4"><label>Data de inclusão</label><input id="dateAdded" type="date" required></div>
+          <div class="col-4"><label>Número do produto / item</label><input id="productNumber" required placeholder="Ex.: 12345"></div>
+          <div class="col-4"><label>Locação</label><select id="itemLocationSelect"><option value="">Sem locação</option></select></div>
+          <div class="col-6"><label>Descrição do produto</label><input id="description" required placeholder="Descrição do item"></div>
+          <div class="col-2"><label>Quantidade</label><input id="quantity" type="number" min="1" step="1" value="1" required></div>
+          <div class="col-12"><div class="hint">O CNPJ é preenchido automaticamente a partir do fornecedor cadastrado.</div></div>
+          <div class="col-12" style="display:flex;justify-content:flex-end"><button class="btn primary hero-btn" style="min-width:220px">Adicionar item →</button></div>
+        </form>
+      </div>
+      <div class="panel">
+        <h3>Fluxo rápido</h3>
+        <div class="flow">
+          <div><span>01</span><b>Cadastre</b><small>Vendedores e fornecedores</small></div>
+          <div><span>02</span><b>Lance</b><small>Produto e data</small></div>
+          <div><span>03</span><b>Acompanhe</b><small>Status de retirada</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="locations" class="view">
+      <div class="loc-header">
+        <button class="plus-button" type="button" title="Criar nova locação" aria-label="Criar nova locação" onclick="toggleLocationForm()">+</button>
+        <div><h1>Locações</h1><div class="subtitle">Locações organizadas pela ordem de criação.</div></div>
+      </div>
+      <div id="locationFormPanel" class="panel" style="display:none">
+        <h3>Nova locação</h3>
+        <form id="locationForm" class="grid">
+          <div class="col-12"><label>Descrição da locação</label><input id="locationDescription" required placeholder="Ex.: Locação obra central"></div>
+          <div class="col-4"><label>Código mestre</label><input id="masterCode" required placeholder="Ex.: 12345"></div>
+          <div class="col-4"><label>Sufixo</label><input id="masterSuffix" required placeholder="Ex.: A ou 01"></div>
+          <div class="col-4"><label>Código interno</label><input id="internalCode" required placeholder="Ex.: INT-001"></div>
+          <div class="col-12 actions"><button class="btn primary" type="submit">Salvar locação</button><button class="btn" type="button" onclick="toggleLocationForm(false)">Cancelar</button></div>
+        </form>
+      </div>
+      <div id="locationsList"></div>
+    </section>
+
+    <section id="items" class="view">
+      <div class="topbar"><div><h1>Itens adicionados</h1><div class="subtitle">Pesquise por item, CNPJ, fornecedor, vendedor ou data.</div></div></div>
+      <div class="cards">
+        <div class="card stat"><div class="label">Total</div><div class="value" id="statTotal">0</div></div>
+        <div class="card stat"><div class="label">Retirados</div><div class="value" id="statTaken">0</div></div>
+        <div class="card stat"><div class="label">Pendentes</div><div class="value" id="statPending">0</div></div>
+        <div class="card stat"><div class="label">Vendedores</div><div class="value" id="statSellers">0</div></div>
+      </div>
+      <div class="panel search-panel">
+        <label>Pesquisa geral</label>
+        <div class="search-row"><span>⌕</span><input id="searchFilter" placeholder="Item, descrição, CNPJ, fornecedor, vendedor ou data (ex.: 01/10/2026)"><button class="btn" onclick="clearFilters()">Limpar</button></div>
+        <div class="search-chips"><button onclick="quickSearch('pendente')">Pendentes</button><button onclick="quickSearch('retirado')">Retirados</button><button onclick="quickSearch(today())">Hoje</button></div>
+      </div>
+      <div class="panel">
+        <div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Vendedor</th><th>Fornecedor</th><th>CNPJ</th><th>Item</th><th>Descrição</th><th>Quantidade</th><th>Status</th><th>Ações</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="reports" class="view">
+      <div class="topbar"><div><h1>Relatórios</h1><div class="subtitle">Imprima uma relação dos produtos retirados, pendentes e urgentes.</div></div></div>
+      <div class="panel report-panel">
+        <h3>Relatório de produtos</h3>
+        <p class="hint">O relatório considera o status atual dos itens. Produtos não retirados de meses anteriores aparecem automaticamente como <strong>URGENTE</strong>.</p>
+        <div class="report-actions">
+          <button class="btn primary" onclick="printReport('todos')">🖨 Imprimir todos</button>
+          <button class="btn" onclick="printReport('retirados')">🖨 Imprimir retirados</button>
+          <button class="btn" onclick="printReport('pendentes')">🖨 Imprimir não retirados</button>
+          <button class="btn danger" onclick="printReport('urgentes')">🖨 Imprimir urgentes</button>
+        </div>
+      </div>
+      <div class="panel report-panel">
+        <h3>Relatórios por locação</h3>
+        <p class="hint">Imprima somente os itens vinculados a uma locação específica.</p>
+        <div id="locationReportButtons" class="report-actions"></div>
+      </div>
+      <div class="cards">
+        <div class="card stat"><div class="label">Todos</div><div class="value" id="reportAll">0</div></div>
+        <div class="card stat"><div class="label">Retirados</div><div class="value" id="reportTaken">0</div></div>
+        <div class="card stat"><div class="label">Não retirados</div><div class="value" id="reportPending">0</div></div>
+        <div class="card stat"><div class="label">Urgentes</div><div class="value" id="reportUrgent">0</div></div>
+      </div>
+    </section>
+
+    <section id="sellers" class="view">
+      <div class="topbar"><div><h1>Vendedores</h1><div class="subtitle">Cadastre os vendedores que poderão ser usados no controle mensal.</div></div></div>
+      <div class="panel"><h3>Cadastrar vendedor</h3><form id="sellerForm" class="grid"><div class="col-8"><label>Nome do vendedor</label><input id="sellerName" required placeholder="Nome completo"></div><div class="col-4" style="display:flex;align-items:end"><button class="btn primary" style="width:100%">Cadastrar</button></div></form></div>
+      <div class="panel"><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>Ações</th></tr></thead><tbody id="sellersBody"></tbody></table></div></div>
+    </section>
+
+    <section id="suppliers" class="view">
+      <div class="topbar"><div><h1>Fornecedores</h1><div class="subtitle">Cadastre os fornecedores para aparecerem automaticamente no lançamento mensal.</div></div></div>
+      <div class="panel"><h3>Cadastrar fornecedor</h3><form id="supplierForm" class="grid">
+        <div class="col-6"><label>Nome do fornecedor</label><input id="supplierName" required placeholder="Razão social ou nome"></div>
+        <div class="col-4"><label>CNPJ <span class="hint">(opcional)</span></label><input id="supplierCnpj" placeholder="00.000.000/0000-00" maxlength="18"></div>
+        <div class="col-2" style="display:flex;align-items:end"><button class="btn primary" style="width:100%">Cadastrar</button></div>
+      </form></div>
+      <div class="panel"><div class="table-wrap"><table class="table"><thead><tr><th>Fornecedor</th><th>CNPJ</th><th>Ações</th></tr></thead><tbody id="suppliersBody"></tbody></table></div></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script>
+<script src="supabase-config.js?v=7"></script>
+<script>
+const KEY='estoque_data_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"sellers":[],"suppliers":[],"items":[],"locations":[]}');
+db.locations=Array.isArray(db.locations)?db.locations:[];
+let cloud=null, cloudUser=null, cloudChannel=null, cloudReady=false, applyingCloud=false, saveTimer=null;
+const $=id=>document.getElementById(id);
+function syncConfigured(){return !!(window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && window.SUPABASE_CONFIG.anonKey && !window.SUPABASE_CONFIG.url.includes('SEU-PROJETO'));}
+function setSyncStatus(msg,ok=false){const e=$('syncStatus');if(e){e.textContent=msg;e.style.color=ok?'#65d98a':'#aebdd0'}}
+function openSyncPanel(){$('syncPanel').style.display='block'} function closeSyncPanel(){$('syncPanel').style.display='none'}
+function initCloud(){
+ if(!syncConfigured()){setSyncStatus('Configuração do Supabase ausente — confira supabase-config.js');return}
+ if(!window.supabase){setSyncStatus('Carregando conexão segura…');setTimeout(()=>{if(window.supabase)initCloud();else setSyncStatus('Não foi possível carregar a conexão. Verifique a internet e recarregue.');},1200);return}
+ cloud=window.supabase.createClient(window.SUPABASE_CONFIG.url,window.SUPABASE_CONFIG.anonKey);
+ cloud.auth.getSession().then(({data,error})=>{if(error){setSyncStatus('Erro ao verificar sessão');return} if(data.session) connectCloud(data.session.user); else setSyncStatus('Supabase configurado — entre para sincronizar')});
+ cloud.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){
+    showPasswordRecovery();
+    return;
+  }
+  if(session?.user){
+    if(event==='USER_UPDATED') hidePasswordRecovery();
+    connectCloud(session.user);
+  }else{
+    cloudUser=null;cloudReady=false;
+    if(cloudChannel){cloud.removeChannel(cloudChannel);cloudChannel=null}
+    setSyncStatus('Desconectado — dados locais neste aparelho');
+  }
+});
+}
+function showPasswordRecovery(){
+  const panel=$('passwordRecoveryPanel');
+  if(!panel)return;
+  panel.style.display='block';
+  const syncPanel=$('syncPanel');
+  if(syncPanel)syncPanel.style.display='none';
+  const email=$('recoveryEmail');
+  if(email&&!email.value)email.value=cloudUser?.email||$('syncEmail').value.trim();
+  enterApp();
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+function hidePasswordRecovery(){
+  const panel=$('passwordRecoveryPanel');
+  if(panel)panel.style.display='none';
+}
+async function requestPasswordRecovery(){
+  if(!cloud){toast('A conexão ainda está carregando. Recarregue a página e tente novamente.');return}
+  const email=$('syncEmail').value.trim();
+  if(!email){toast('Digite seu e-mail no campo E-mail antes de clicar.');$('syncEmail').focus();return}
+  const {error}=await cloud.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){toast('Não foi possível enviar: '+error.message);return}
+  toast('E-mail de recuperação enviado. Abra o link mais recente.');
+}
+async function resendPasswordRecovery(){
+  if(!cloud){$('recoveryMessage').textContent='Conexão indisponível. Recarregue a página.';return}
+  const email=$('recoveryEmail').value.trim();
+  const message=$('recoveryMessage');
+  if(!email){message.textContent='Digite seu e-mail.';return}
+  const {error}=await cloud.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  message.textContent=error?'Erro: '+error.message:'E-mail enviado. Use somente o link mais recente recebido.';
+}
+async function saveNewPassword(){
+  if(!cloud){$('recoveryMessage').textContent='Conexão indisponível. Recarregue a página.';return}
+  const password=$('newPassword').value;
+  const confirmation=$('confirmNewPassword').value;
+  const message=$('recoveryMessage');
+  if(password.length<8){message.textContent='A senha precisa ter pelo menos 8 caracteres.';return}
+  if(password!==confirmation){message.textContent='As senhas não são iguais.';return}
+  const {error}=await cloud.auth.updateUser({password});
+  if(error){message.textContent='Erro ao salvar: '+error.message;return}
+  $('newPassword').value='';$('confirmNewPassword').value='';
+  message.textContent='Senha alterada com sucesso. Agora entre com a nova senha.';
+  toast('Senha alterada com sucesso.');
+  hidePasswordRecovery();
+  openSyncPanel();
+}
+
+async function syncSignIn(){if(!cloud){toast('Configure primeiro o supabase-config.js e atualize a página.');return}const email=$('syncEmail').value.trim(),password=$('syncPassword').value;if(!email||!password){toast('Informe e-mail e senha.');return}const {error}=await cloud.auth.signInWithPassword({email,password});if(error)toast('Falha no login: '+error.message);else toast('Login realizado.')}
+async function syncSignUp(){if(!cloud){toast('Configure primeiro o supabase-config.js e atualize a página.');return}const email=$('syncEmail').value.trim(),password=$('syncPassword').value;if(!email||password.length<8){toast('Informe e-mail e senha com pelo menos 8 caracteres.');return}const {error}=await cloud.auth.signUp({email,password});if(error)toast('Falha ao criar conta: '+error.message);else toast('Conta solicitada. Se a confirmação por e-mail estiver ativa, confirme antes de entrar.')}
+async function syncSignOut(){if(cloud)await cloud.auth.signOut();cloudUser=null;cloudReady=false;setSyncStatus('Desconectado — dados locais neste aparelho')}
+async function connectCloud(user){
+ if(!cloud||!user)return;cloudUser=user;setSyncStatus('Conectando e verificando dados…');
+ const {data,error}=await cloud.from('app_state').select('state').eq('owner_id',user.id).maybeSingle();
+ if(error){setSyncStatus('Erro na nuvem: verifique o SQL e as permissões');console.error(error);return}
+ if(data&&data.state){applyingCloud=true;db=normalizeDb(data.state);localStorage.setItem(KEY,JSON.stringify(db));renderAll();applyingCloud=false;setSyncStatus('Sincronizado com a nuvem',true)}
+ else {const {error:insertError}=await cloud.from('app_state').insert({owner_id:user.id,state:db});if(insertError){setSyncStatus('Não foi possível inicializar os dados na nuvem');console.error(insertError);return}setSyncStatus('Dados deste aparelho enviados para a nuvem',true)}
+ cloudReady=true;
+ if(cloudChannel)cloud.removeChannel(cloudChannel);
+ cloudChannel=cloud.channel('app-state-'+user.id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_state',filter:'owner_id=eq.'+user.id},payload=>{if(!payload.new||!payload.new.state)return;applyingCloud=true;db=normalizeDb(payload.new.state);localStorage.setItem(KEY,JSON.stringify(db));renderAll();applyingCloud=false;setSyncStatus('Atualizado de outro dispositivo',true)}).subscribe();
+}
+function normalizeDb(v){return {sellers:Array.isArray(v?.sellers)?v.sellers:[],suppliers:Array.isArray(v?.suppliers)?v.suppliers:[],items:Array.isArray(v?.items)?v.items.map(i=>({...i,quantity:Math.max(1,parseInt(i.quantity,10)||1)})):[],locations:Array.isArray(v?.locations)?v.locations:[]}}
+async function pushCloud(){if(!cloudReady||!cloudUser||applyingCloud||!cloud)return;setSyncStatus('Enviando alterações…');const {error}=await cloud.from('app_state').upsert({owner_id:cloudUser.id,state:db,updated_at:new Date().toISOString()},{onConflict:'owner_id'});if(error){setSyncStatus('Erro ao sincronizar — alterações mantidas neste aparelho');console.error(error)}else setSyncStatus('Sincronizado com a nuvem',true)}
+
+function uid(){return 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10)}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll();if(!applyingCloud){clearTimeout(saveTimer);saveTimer=setTimeout(pushCloud,350)}}
+function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display='none',2200)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function enterApp(){const splash=$('splashScreen');if(splash){splash.style.opacity='0';splash.style.transition='opacity .45s ease';setTimeout(()=>{splash.style.display='none'},460)}try{sessionStorage.setItem('estoque_splash_seen','1')}catch(e){}}
+function toggleLocationForm(force){const p=$('locationFormPanel');p.style.display=(force===undefined?p.style.display==='none':!force)?'block':'none';if(p.style.display==='block')$('locationDescription').focus()}
+function showView(view){
+  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===view));
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  if(view==='monthly'||view==='items') renderMonthly(); if(view==='reports') renderReports(); if(view==='locations') renderLocations();
+  const sidebar=$('sidebar');sidebar.classList.remove('open');
+  document.querySelectorAll('.view').forEach(x=>{if(x.id===view)x.scrollTop=0});
+  const main=document.querySelector('main');if(main)main.scrollTop=0;
+}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+function toggleSidebar(){const s=$('sidebar');s.classList.toggle('open')}
+
+function today(){return new Date().toISOString().slice(0,10)}
+function maskCnpj(v){let d=String(v||'').replace(/\D/g,'').slice(0,14);if(!d)return '';if(d.length>2)d=d.slice(0,2)+'.'+d.slice(2);if(d.length>6)d=d.slice(0,6)+'.'+d.slice(6);if(d.length>10)d=d.slice(0,10)+'/'+d.slice(10);if(d.length>15)d=d.slice(0,15)+'-'+d.slice(15);return d}
+$('supplierCnpj').addEventListener('input',e=>e.target.value=maskCnpj(e.target.value));
+
+$('dateAdded').value=today();
+
+$('sellerForm').addEventListener('submit',e=>{e.preventDefault();const name=$('sellerName').value.trim();if(!name){toast('Digite o nome do vendedor.');return}db.sellers.push({id:uid(),name});$('sellerName').value='';save();toast('Vendedor cadastrado com sucesso.')});
+$('supplierForm').addEventListener('submit',e=>{e.preventDefault();const name=$('supplierName').value.trim();const cnpj=maskCnpj($('supplierCnpj').value);if(!name){toast('Digite o nome do fornecedor.');return}if(cnpj && cnpj.replace(/\D/g,'').length!==14){toast('Digite um CNPJ válido com 14 números.');return}db.suppliers.push({id:uid(),name,cnpj:cnpj||'Não informado'});$('supplierName').value='';$('supplierCnpj').value='';save();toast('Fornecedor cadastrado com sucesso.')});
+$('itemForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ if(!db.sellers.length||!db.suppliers.length){toast('Cadastre vendedor e fornecedor antes de lançar.');return}
+ const sid=$('sellerSelect').value, spid=$('supplierSelect').value;
+ const quantity=Math.max(1,parseInt($('quantity').value,10)||1);
+ db.items.push({id:uid(),sellerId:sid,supplierId:spid,locationId:$('itemLocationSelect').value||null,productNumber:$('productNumber').value.trim(),description:$('description').value.trim(),quantity,date:$('dateAdded').value,taken:false});
+ $('productNumber').value='';$('description').value='';$('quantity').value='1';$('dateAdded').value=today();$('itemLocationSelect').value='';save();toast('Lançamento adicionado.');
+});
+$('locationForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const description=$('locationDescription').value.trim(),masterCode=$('masterCode').value.trim(),suffix=$('masterSuffix').value.trim(),internalCode=$('internalCode').value.trim();
+ if(!description||!masterCode||!suffix||!internalCode){toast('Preencha todos os campos da locação.');return}
+ db.locations.push({id:uid(),description,masterCode,suffix,internalCode,createdAt:new Date().toISOString()});
+ $('locationForm').reset();toggleLocationForm(false);save();renderLocations();toast('Locação criada com sucesso.');
+});
+function getLocation(id){return db.locations.find(l=>l.id===id)||null}
+function renderItemLocationSelect(item){return `<select aria-label="Locação do item" onchange="assignItemToLocation('${item.id}',this.value)" style="max-width:210px"><option value="" ${!item.locationId?'selected':''}>Sem locação</option>${[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')).map(l=>`<option value="${l.id}" ${item.locationId===l.id?'selected':''}>${esc(locationCode(l))} — ${esc(l.description)}</option>`).join('')}</select>`}
+function assignItemToLocation(id,locationId){const item=db.items.find(i=>i.id===id);if(!item)return;item.locationId=locationId||null;save();toast(locationId?'Item vinculado à locação.':'Item removido da locação.')}
+function locationCode(l){if(!l)return 'Sem locação';return [l.masterCode,l.suffix,l.internalCode].map(x=>String(x||'').trim()).join('').replace(/\s+/g,'')||l.description||'Locação'}
+function renderLocations(){
+ const list=$('locationsList');if(!list)return;
+ const rows=[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+ const cards=rows.map((l,index)=>{
+   const items=db.items.filter(i=>i.locationId===l.id).sort((a,b)=>(a.productNumber||'').localeCompare(b.productNumber||'',undefined,{numeric:true}));
+   const itemRows=items.length?items.map(i=>`<div class="loc-item-row"><div><div class="folder-code"><b>▤ ${esc(i.productNumber||'Sem código do item')}</b></div><div>${esc(i.description||'Sem descrição')}</div><div class="hint">Qtd.: ${Math.max(1,parseInt(i.quantity,10)||1)} · ${esc(getStatusLabel(i))}</div></div><div class="actions">${renderItemLocationSelect(i)}<button class="btn danger small" onclick="deleteItem('${i.id}')">Excluir item</button></div></div>`).join(''):'<div class="folder-empty">Esta pasta ainda não tem itens. Cadastre um lançamento e selecione esta locação para colocar o item aqui.</div>';
+   return `<article class="loc-card"><details class="location-folder"><summary><span class="folder-icon">📁</span><span class="folder-heading"><span class="folder-title">${esc(l.description)}</span><span class="folder-meta">Locação ${String(index+1).padStart(2,'0')} · Código: ${esc(locationCode(l))}</span></span><span class="folder-count">${items.length} ${items.length===1?'item':'itens'}</span><span class="folder-chevron">▶</span></summary><div class="folder-content"><div class="loc-details"><div><span>Código mestre + sufixo</span><b>${esc(l.masterCode)} + ${esc(l.suffix)}</b></div><div><span>Código interno</span><b>${esc(l.internalCode)}</b></div><div><span>Criada em</span><b>${esc(new Date(l.createdAt||Date.now()).toLocaleString('pt-BR'))}</b></div></div><div class="loc-items"><h4>Códigos dos itens dentro desta locação</h4>${itemRows}</div></div></details></article>`;
+ }).join('');
+ const unassigned=db.items.filter(i=>!i.locationId||!getLocation(i.locationId)).sort((a,b)=>(a.productNumber||'').localeCompare(b.productNumber||'',undefined,{numeric:true}));
+ const unassignedHtml=unassigned.length?`<article class="loc-card"><details class="location-folder" open><summary><span class="folder-icon">📂</span><span class="folder-heading"><span class="folder-title">Itens sem locação</span><span class="folder-meta">Itens mantidos que ainda não foram colocados em uma pasta de locação.</span></span><span class="folder-count">${unassigned.length} ${unassigned.length===1?'item':'itens'}</span><span class="folder-chevron">▶</span></summary><div class="folder-content"><div class="loc-items">${unassigned.map(i=>`<div class="loc-item-row"><div><div class="folder-code"><b>▤ ${esc(i.productNumber||'Sem código do item')}</b></div><div>${esc(i.description||'Sem descrição')}</div><div class="hint">Qtd.: ${Math.max(1,parseInt(i.quantity,10)||1)} · ${esc(getStatusLabel(i))}</div></div><div class="actions">${renderItemLocationSelect(i)}<button class="btn danger small" onclick="deleteItem('${i.id}')">Excluir item</button></div></div>`).join('')}</div></div></details></article>`:'';
+ list.innerHTML=(cards||'<div class="panel empty">Nenhuma locação cadastrada. Toque no botão + para criar a primeira pasta de locação.</div>')+unassignedHtml;
+ renderLocationReportButtons();
+}
+function renderLocationReportButtons(){const el=$('locationReportButtons');if(!el)return;const rows=[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));el.innerHTML=rows.length?rows.map(l=>`<button class="btn" onclick="printReport('location:${l.id}')">🖨 ${esc(locationCode(l))} — ${esc(l.description)}</button>`).join(''):'<div class="hint">Cadastre uma locação para habilitar relatórios por locação.</div>';}
+$('searchFilter').addEventListener('input',renderMonthly);
+
+function renderSelects(){
+ $('sellerSelect').innerHTML=db.sellers.length?db.sellers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(''):'<option value="">Cadastre um vendedor</option>';
+ $('supplierSelect').innerHTML=db.suppliers.length?db.suppliers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(''):'<option value="">Cadastre um fornecedor</option>';
+ const locSelect=$('itemLocationSelect');if(locSelect){const selected=locSelect.value;locSelect.innerHTML='<option value="">Sem locação</option>'+[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')).map(l=>`<option value="${l.id}">${esc(locationCode(l))} — ${esc(l.description)}</option>`).join('');if(db.locations.some(l=>l.id===selected))locSelect.value=selected;}
+}
+function renderSellers(){
+ $('sellersBody').innerHTML=db.sellers.length?db.sellers.map(x=>`<tr><td>${esc(x.name)}</td><td><button class="btn danger small" onclick="deleteSeller('${x.id}')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="2" class="empty">Nenhum vendedor cadastrado.</td></tr>';
+}
+function renderSuppliers(){
+ $('suppliersBody').innerHTML=db.suppliers.length?db.suppliers.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.cnpj||'Não informado')}</td><td><button class="btn danger small" onclick="deleteSupplier('${x.id}')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nenhum fornecedor cadastrado.</td></tr>';
+}
+function renderMonthly(){
+ const q=($('searchFilter').value||'').toLowerCase().trim();
+ const filtered=db.items.filter(i=>{
+   const loc=getLocation(i.locationId); const s=[i.productNumber,i.description,getSeller(i),getSupplier(i),getSupplierCnpj(i),formatDate(i.date),i.date,i.internalCode,i.masterCode,i.suffix,loc?.internalCode,loc?.masterCode,loc?.suffix,loc?.description,locationCode(loc)].join(' ').toLowerCase();
+   if(q==='pendente') return !i.taken;
+   if(q==='retirado') return i.taken;
+   return !q || s.includes(q);
+ }).sort((a,b)=>b.date.localeCompare(a.date));
+ $('itemsBody').innerHTML=filtered.length?filtered.map(i=>`<tr class="${isUrgent(i)?'urgent-row':''}">
+  <td>${formatDate(i.date)}</td><td>${esc(getSeller(i))}</td><td>${esc(getSupplier(i))}</td><td>${esc(getSupplierCnpj(i))}</td><td><strong>${esc(i.productNumber)}</strong></td><td>${esc(i.description)}</td><td>${Math.max(1,parseInt(i.quantity,10)||1)}</td>
+  <td><span class="status ${i.taken?'ok':(isUrgent(i)?'urgent-status':'no')}">${i.taken?'✓ Retirado':(isUrgent(i)?'⚠ URGENTE':'! Não retirado')}</span></td>
+  <td><div class="actions"><button class="btn small" onclick="toggleTaken('${i.id}')">${i.taken?'Marcar pendente':'Marcar retirado'}</button><button class="btn danger small" onclick="deleteItem('${i.id}')">Excluir</button></div></td>
+ </tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum item encontrado.</td></tr>';
+ $('statTotal').textContent=db.items.length;
+ $('statTaken').textContent=db.items.filter(i=>i.taken).length;
+ $('statPending').textContent=db.items.filter(i=>!i.taken).length;
+ $('statSellers').textContent=new Set(db.items.map(i=>i.sellerId)).size;
+ $('heroItems').textContent=db.items.length;
+ $('heroTaken').textContent=db.items.filter(i=>i.taken).length;
+ $('heroPending').textContent=db.items.filter(i=>!i.taken).length; renderReports();
+}
+function getSeller(i){return db.sellers.find(x=>x.id===i.sellerId)?.name||'Vendedor removido'}
+function getSupplier(i){return db.suppliers.find(x=>x.id===i.supplierId)?.name||'Fornecedor removido'}
+function getSupplierCnpj(i){return db.suppliers.find(x=>x.id===i.supplierId)?.cnpj||'—'}
+function formatDate(d){if(!d)return '';const [y,m,day]=d.split('-');return `${day}/${m}/${y}`}
+function isUrgent(i){
+  if(i.taken||!i.date)return false;
+  const d=new Date(i.date+'T00:00:00');
+  const now=new Date();
+  return d.getFullYear()<now.getFullYear() || (d.getFullYear()===now.getFullYear() && d.getMonth()<now.getMonth());
+}
+function getStatusLabel(i){return i.taken?'Retirado':(isUrgent(i)?'URGENTE':'Não retirado')}
+
+function renderReports(){
+ const urgent=db.items.filter(isUrgent).length;
+ $('reportAll').textContent=db.items.length;
+ $('reportTaken').textContent=db.items.filter(i=>i.taken).length;
+ $('reportPending').textContent=db.items.filter(i=>!i.taken).length;
+ $('reportUrgent').textContent=urgent;
+}
+function printReport(filter){
+ let rows=db.items.slice(), title;
+ if(filter==='retirados') rows=rows.filter(i=>i.taken);
+ if(filter==='pendentes') rows=rows.filter(i=>!i.taken);
+ if(filter==='urgentes') rows=rows.filter(isUrgent);
+ if(String(filter).startsWith('location:')){const id=String(filter).slice(9),loc=getLocation(id);rows=rows.filter(i=>i.locationId===id);title='Locação '+(loc?locationCode(loc)+' — '+loc.description:'');}
+ else title={todos:'Todos os produtos',retirados:'Produtos retirados',pendentes:'Produtos não retirados',urgentes:'Produtos URGENTES'}[filter]||'Relatório de produtos';
+ rows.sort((a,b)=>{if(isUrgent(a)!==isUrgent(b)) return isUrgent(a)?-1:1; return b.date.localeCompare(a.date)});
+ const win=window.open('','_blank','width=1100,height=750');
+ if(!win){toast('Permita pop-ups para imprimir o relatório.');return}
+ const body=rows.map(i=>`<tr><td>${formatDate(i.date)}</td><td>${esc(locationCode(getLocation(i.locationId)))}</td><td>${esc(getSeller(i))}</td><td>${esc(getSupplier(i))}</td><td>${esc(getSupplierCnpj(i))}</td><td>${esc(i.productNumber)}</td><td>${esc(i.description)}</td><td>${Math.max(1,parseInt(i.quantity,10)||1)}</td><td>${esc(getStatusLabel(i))}</td></tr>`).join('') || '<tr><td colspan="9">Nenhum item encontrado.</td></tr>';
+ win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>ESTOQUE - ${title}</title><style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}p{color:#555}.logo{max-width:260px;max-height:100px;object-fit:contain}.meta{display:flex;justify-content:space-between;margin:20px 0;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;font-size:11px;text-align:left}th{background:#e9edf2}.urgent{font-weight:800;color:#b40000}@media print{body{padding:0}}</style></head><body><img class="logo" src="logo.png"><h1>ESTOQUE — ${title}</h1><p>Relatório de controle de locação</p><div class="meta"><span>Gerado em: ${formatDate(today())}</span><span>Total: ${rows.length}</span></div><table><thead><tr><th>Data</th><th>Locação</th><th>Vendedor</th><th>Fornecedor</th><th>CNPJ</th><th>Item</th><th>Descrição</th><th>Quantidade</th><th>Status</th></tr></thead><tbody>${body}</tbody></table><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+ win.document.close();
+}
+function toggleTaken(id){const i=db.items.find(x=>x.id===id);if(i){i.taken=!i.taken;save();toast(i.taken?'Item marcado como retirado.':'Item marcado como pendente.')}}
+function deleteItem(id){if(confirm('Excluir este lançamento?')){db.items=db.items.filter(x=>x.id!==id);save();toast('Lançamento excluído.')}}
+function deleteSeller(id){
+ if(db.items.some(x=>x.sellerId===id)){toast('Não é possível excluir: vendedor possui lançamentos.');return}
+ if(confirm('Excluir este vendedor?')){db.sellers=db.sellers.filter(x=>x.id!==id);save();toast('Vendedor excluído.')}
+}
+function deleteSupplier(id){
+ if(db.items.some(x=>x.supplierId===id)){toast('Não é possível excluir: fornecedor possui lançamentos.');return}
+ if(confirm('Excluir este fornecedor?')){db.suppliers=db.suppliers.filter(x=>x.id!==id);save();toast('Fornecedor excluído.')}
+}
+function clearFilters(){$('searchFilter').value='';renderMonthly()}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+function exportCSV(){
+ const rows=db.items;
+ const csv=[['Data','Vendedor','Fornecedor','CNPJ','Número do produto','Descrição','Quantidade','Status'],...rows.map(i=>[i.date,getSeller(i),getSupplier(i),getSupplierCnpj(i),i.productNumber,i.description,i.quantity||1,i.taken?'Retirado':'Não retirado'])].map(r=>r.map(csvCell).join(';')).join('\\n');
+ const blob=new Blob(["\\ufeff"+csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`ESTOQUE_itens.csv`;a.click();URL.revokeObjectURL(a.href);
+}
+db.suppliers=db.suppliers.map(x=>({...x,cnpj:x.cnpj||'Não informado'}));
+function renderAll(){renderSelects();renderSellers();renderSuppliers();renderMonthly();renderReports();renderLocations()}
+renderAll();
+try{if(sessionStorage.getItem('estoque_splash_seen')==='1')$('splashScreen').style.display='none';else setTimeout(enterApp,5000)}catch(e){setTimeout(enterApp,5000)}
+initCloud();
+try{
+  const hash=window.location.hash||'';
+  if(hash.includes('error_code=otp_expired')||hash.includes('error=access_denied')){
+    setTimeout(()=>{openSyncPanel();toast('O link de recuperação expirou ou já foi usado. Solicite um novo e-mail e abra o link mais recente.');},300);
+  }
+}catch(e){}
+</script>
+</body>
+</html>
