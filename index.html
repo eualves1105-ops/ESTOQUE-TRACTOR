@@ -77,6 +77,7 @@
     .splash-enter{display:none}
     .view-fixed{position:relative}
     .loc-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}.plus-button{width:46px;height:46px;border-radius:13px;border:1px solid #3474b8;background:#0b4da2;color:#fff;font-size:30px;line-height:1;display:grid;place-items:center;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+    .loc-items{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.loc-items h4{margin:0 0 8px}.loc-item-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.loc-item-row:last-child{border-bottom:0}.loc-item-row>div{min-width:0}.loc-item-row .hint{margin-top:3px}
     .loc-card{background:linear-gradient(145deg,#0d1622,#090e15);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:10px}.loc-card h3{margin:0 0 10px}.loc-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.loc-details span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase}.loc-details b{display:block;overflow-wrap:anywhere;margin-top:4px}
     @media(max-width:700px){.loc-details{grid-template-columns:1fr}.splash{top:-15vh;right:-10vw;bottom:-15vh;left:-10vw;min-height:130vh;background-size:cover;background-position:center center;transform:translateZ(0) scale(1.03)}}
 
@@ -163,6 +164,7 @@
           <div class="col-4"><label>Fornecedor</label><select id="supplierSelect" required></select></div>
           <div class="col-4"><label>Data de inclusão</label><input id="dateAdded" type="date" required></div>
           <div class="col-4"><label>Número do produto / item</label><input id="productNumber" required placeholder="Ex.: 12345"></div>
+          <div class="col-4"><label>Locação</label><select id="itemLocationSelect"><option value="">Sem locação</option></select></div>
           <div class="col-6"><label>Descrição do produto</label><input id="description" required placeholder="Descrição do item"></div>
           <div class="col-2"><label>Quantidade</label><input id="quantity" type="number" min="1" step="1" value="1" required></div>
           <div class="col-12"><div class="hint">O CNPJ é preenchido automaticamente a partir do fornecedor cadastrado.</div></div>
@@ -226,6 +228,11 @@
           <button class="btn" onclick="printReport('pendentes')">🖨 Imprimir não retirados</button>
           <button class="btn danger" onclick="printReport('urgentes')">🖨 Imprimir urgentes</button>
         </div>
+      </div>
+      <div class="panel report-panel">
+        <h3>Relatórios por locação</h3>
+        <p class="hint">Imprima somente os itens vinculados a uma locação específica.</p>
+        <div id="locationReportButtons" class="report-actions"></div>
       </div>
       <div class="cards">
         <div class="card stat"><div class="label">Todos</div><div class="value" id="reportAll">0</div></div>
@@ -378,8 +385,8 @@ $('itemForm').addEventListener('submit',e=>{
  if(!db.sellers.length||!db.suppliers.length){toast('Cadastre vendedor e fornecedor antes de lançar.');return}
  const sid=$('sellerSelect').value, spid=$('supplierSelect').value;
  const quantity=Math.max(1,parseInt($('quantity').value,10)||1);
- db.items.push({id:uid(),sellerId:sid,supplierId:spid,productNumber:$('productNumber').value.trim(),description:$('description').value.trim(),quantity,date:$('dateAdded').value,taken:false});
- $('productNumber').value='';$('description').value='';$('quantity').value='1';$('dateAdded').value=today();save();toast('Lançamento adicionado.');
+ db.items.push({id:uid(),sellerId:sid,supplierId:spid,locationId:$('itemLocationSelect').value||null,productNumber:$('productNumber').value.trim(),description:$('description').value.trim(),quantity,date:$('dateAdded').value,taken:false});
+ $('productNumber').value='';$('description').value='';$('quantity').value='1';$('dateAdded').value=today();$('itemLocationSelect').value='';save();toast('Lançamento adicionado.');
 });
 $('locationForm').addEventListener('submit',e=>{
  e.preventDefault();
@@ -388,12 +395,30 @@ $('locationForm').addEventListener('submit',e=>{
  db.locations.push({id:uid(),description,masterCode,suffix,internalCode,createdAt:new Date().toISOString()});
  $('locationForm').reset();toggleLocationForm(false);save();renderLocations();toast('Locação criada com sucesso.');
 });
-function renderLocations(){const list=$('locationsList');if(!list)return;const rows=[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));list.innerHTML=rows.length?rows.map((l,index)=>`<article class="loc-card"><h3>${String(index+1).padStart(2,'0')} · ${esc(l.description)}</h3><div class="loc-details"><div><span>Código mestre + sufixo</span><b>${esc(l.masterCode)} + ${esc(l.suffix)}</b></div><div><span>Código interno</span><b>${esc(l.internalCode)}</b></div><div><span>Criada em</span><b>${esc(new Date(l.createdAt||Date.now()).toLocaleString('pt-BR'))}</b></div></div></article>`).join(''):'<div class="panel empty">Nenhuma locação cadastrada. Toque no botão + para criar a primeira.</div>'}
+function getLocation(id){return db.locations.find(l=>l.id===id)||null}
+function renderItemLocationSelect(item){return `<select aria-label="Locação do item" onchange="assignItemToLocation('${item.id}',this.value)" style="max-width:210px"><option value="" ${!item.locationId?'selected':''}>Sem locação</option>${[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')).map(l=>`<option value="${l.id}" ${item.locationId===l.id?'selected':''}>${esc(locationCode(l))} — ${esc(l.description)}</option>`).join('')}</select>`}
+function assignItemToLocation(id,locationId){const item=db.items.find(i=>i.id===id);if(!item)return;item.locationId=locationId||null;save();toast(locationId?'Item vinculado à locação.':'Item removido da locação.')}
+function locationCode(l){if(!l)return 'Sem locação';return [l.masterCode,l.suffix,l.internalCode].map(x=>String(x||'').trim()).join('').replace(/\s+/g,'')||l.description||'Locação'}
+function renderLocations(){
+ const list=$('locationsList');if(!list)return;
+ const rows=[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+ const cards=rows.map((l,index)=>{
+   const items=db.items.filter(i=>i.locationId===l.id).sort((a,b)=>(a.productNumber||'').localeCompare(b.productNumber||'',undefined,{numeric:true}));
+   const itemRows=items.length?items.map(i=>`<div class="loc-item-row"><div><strong>${esc(i.productNumber||'Item')}</strong> — ${esc(i.description||'Sem descrição')}<div class="hint">Qtd.: ${Math.max(1,parseInt(i.quantity,10)||1)} · ${esc(getStatusLabel(i))}</div></div><div class="actions">${renderItemLocationSelect(i)}<button class="btn danger small" onclick="deleteItem('${i.id}')">Excluir item</button></div></div>`).join(''):'<div class="hint">Nenhum item vinculado a esta locação.</div>';
+   return `<article class="loc-card"><h3>${String(index+1).padStart(2,'0')} · ${esc(l.description)}</h3><div class="loc-details"><div><span>Código da locação</span><b>${esc(locationCode(l))}</b></div><div><span>Código mestre + sufixo</span><b>${esc(l.masterCode)} + ${esc(l.suffix)}</b></div><div><span>Código interno</span><b>${esc(l.internalCode)}</b></div><div><span>Itens nesta locação</span><b>${items.length}</b></div><div><span>Criada em</span><b>${esc(new Date(l.createdAt||Date.now()).toLocaleString('pt-BR'))}</b></div></div><div class="loc-items"><h4>Itens da locação</h4>${itemRows}</div></article>`;
+ }).join('');
+ const unassigned=db.items.filter(i=>!i.locationId||!getLocation(i.locationId)).sort((a,b)=>(a.productNumber||'').localeCompare(b.productNumber||'',undefined,{numeric:true}));
+ const unassignedHtml=unassigned.length?`<article class="loc-card"><h3>Itens sem locação</h3><div class="hint">Estes itens já existiam ou foram cadastrados sem escolher uma locação. Eles foram mantidos.</div><div class="loc-items">${unassigned.map(i=>`<div class="loc-item-row"><div><strong>${esc(i.productNumber||'Item')}</strong> — ${esc(i.description||'Sem descrição')}<div class="hint">Qtd.: ${Math.max(1,parseInt(i.quantity,10)||1)} · ${esc(getStatusLabel(i))}</div></div><div class="actions">${renderItemLocationSelect(i)}<button class="btn danger small" onclick="deleteItem('${i.id}')">Excluir item</button></div></div>`).join('')}</div></article>`:'';
+ list.innerHTML=(cards||'<div class="panel empty">Nenhuma locação cadastrada. Toque no botão + para criar a primeira.</div>')+unassignedHtml;
+ renderLocationReportButtons();
+}
+function renderLocationReportButtons(){const el=$('locationReportButtons');if(!el)return;const rows=[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));el.innerHTML=rows.length?rows.map(l=>`<button class="btn" onclick="printReport('location:${l.id}')">🖨 ${esc(locationCode(l))} — ${esc(l.description)}</button>`).join(''):'<div class="hint">Cadastre uma locação para habilitar relatórios por locação.</div>';}
 $('searchFilter').addEventListener('input',renderMonthly);
 
 function renderSelects(){
  $('sellerSelect').innerHTML=db.sellers.length?db.sellers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(''):'<option value="">Cadastre um vendedor</option>';
  $('supplierSelect').innerHTML=db.suppliers.length?db.suppliers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(''):'<option value="">Cadastre um fornecedor</option>';
+ const locSelect=$('itemLocationSelect');if(locSelect){const selected=locSelect.value;locSelect.innerHTML='<option value="">Sem locação</option>'+[...db.locations].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||'')).map(l=>`<option value="${l.id}">${esc(locationCode(l))} — ${esc(l.description)}</option>`).join('');if(db.locations.some(l=>l.id===selected))locSelect.value=selected;}
 }
 function renderSellers(){
  $('sellersBody').innerHTML=db.sellers.length?db.sellers.map(x=>`<tr><td>${esc(x.name)}</td><td><button class="btn danger small" onclick="deleteSeller('${x.id}')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="2" class="empty">Nenhum vendedor cadastrado.</td></tr>';
@@ -404,7 +429,7 @@ function renderSuppliers(){
 function renderMonthly(){
  const q=($('searchFilter').value||'').toLowerCase().trim();
  const filtered=db.items.filter(i=>{
-   const s=[i.productNumber,i.description,getSeller(i),getSupplier(i),getSupplierCnpj(i),formatDate(i.date),i.date].join(' ').toLowerCase();
+   const loc=getLocation(i.locationId); const s=[i.productNumber,i.description,getSeller(i),getSupplier(i),getSupplierCnpj(i),formatDate(i.date),i.date,i.internalCode,i.masterCode,i.suffix,loc?.internalCode,loc?.masterCode,loc?.suffix,loc?.description,locationCode(loc)].join(' ').toLowerCase();
    if(q==='pendente') return !i.taken;
    if(q==='retirado') return i.taken;
    return !q || s.includes(q);
@@ -442,16 +467,17 @@ function renderReports(){
  $('reportUrgent').textContent=urgent;
 }
 function printReport(filter){
- let rows=db.items.slice();
+ let rows=db.items.slice(), title;
  if(filter==='retirados') rows=rows.filter(i=>i.taken);
  if(filter==='pendentes') rows=rows.filter(i=>!i.taken);
  if(filter==='urgentes') rows=rows.filter(isUrgent);
+ if(String(filter).startsWith('location:')){const id=String(filter).slice(9),loc=getLocation(id);rows=rows.filter(i=>i.locationId===id);title='Locação '+(loc?locationCode(loc)+' — '+loc.description:'');}
+ else title={todos:'Todos os produtos',retirados:'Produtos retirados',pendentes:'Produtos não retirados',urgentes:'Produtos URGENTES'}[filter]||'Relatório de produtos';
  rows.sort((a,b)=>{if(isUrgent(a)!==isUrgent(b)) return isUrgent(a)?-1:1; return b.date.localeCompare(a.date)});
- const title={todos:'Todos os produtos',retirados:'Produtos retirados',pendentes:'Produtos não retirados',urgentes:'Produtos URGENTES'}[filter];
  const win=window.open('','_blank','width=1100,height=750');
  if(!win){toast('Permita pop-ups para imprimir o relatório.');return}
- const body=rows.map(i=>`<tr><td>${formatDate(i.date)}</td><td>${esc(getSeller(i))}</td><td>${esc(getSupplier(i))}</td><td>${esc(getSupplierCnpj(i))}</td><td>${esc(i.productNumber)}</td><td>${esc(i.description)}</td><td>${Math.max(1,parseInt(i.quantity,10)||1)}</td><td>${esc(getStatusLabel(i))}</td></tr>`).join('') || '<tr><td colspan="8">Nenhum item encontrado.</td></tr>';
- win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>ESTOQUE - ${title}</title><style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}p{color:#555}.logo{max-width:260px;max-height:100px;object-fit:contain}.meta{display:flex;justify-content:space-between;margin:20px 0;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;font-size:11px;text-align:left}th{background:#e9edf2}.urgent{font-weight:800;color:#b40000}@media print{body{padding:0}}</style></head><body><img class="logo" src="logo.png"><h1>ESTOQUE — ${title}</h1><p>Relatório de controle de locação</p><div class="meta"><span>Gerado em: ${formatDate(today())}</span><span>Total: ${rows.length}</span></div><table><thead><tr><th>Data</th><th>Vendedor</th><th>Fornecedor</th><th>CNPJ</th><th>Item</th><th>Descrição</th><th>Quantidade</th><th>Status</th></tr></thead><tbody>${body}</tbody></table><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+ const body=rows.map(i=>`<tr><td>${formatDate(i.date)}</td><td>${esc(locationCode(getLocation(i.locationId)))}</td><td>${esc(getSeller(i))}</td><td>${esc(getSupplier(i))}</td><td>${esc(getSupplierCnpj(i))}</td><td>${esc(i.productNumber)}</td><td>${esc(i.description)}</td><td>${Math.max(1,parseInt(i.quantity,10)||1)}</td><td>${esc(getStatusLabel(i))}</td></tr>`).join('') || '<tr><td colspan="9">Nenhum item encontrado.</td></tr>';
+ win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>ESTOQUE - ${title}</title><style>body{font-family:Arial,sans-serif;color:#111;padding:28px}h1{margin:0 0 4px}p{color:#555}.logo{max-width:260px;max-height:100px;object-fit:contain}.meta{display:flex;justify-content:space-between;margin:20px 0;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;font-size:11px;text-align:left}th{background:#e9edf2}.urgent{font-weight:800;color:#b40000}@media print{body{padding:0}}</style></head><body><img class="logo" src="logo.png"><h1>ESTOQUE — ${title}</h1><p>Relatório de controle de locação</p><div class="meta"><span>Gerado em: ${formatDate(today())}</span><span>Total: ${rows.length}</span></div><table><thead><tr><th>Data</th><th>Locação</th><th>Vendedor</th><th>Fornecedor</th><th>CNPJ</th><th>Item</th><th>Descrição</th><th>Quantidade</th><th>Status</th></tr></thead><tbody>${body}</tbody></table><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
  win.document.close();
 }
 function toggleTaken(id){const i=db.items.find(x=>x.id===id);if(i){i.taken=!i.taken;save();toast(i.taken?'Item marcado como retirado.':'Item marcado como pendente.')}}
@@ -475,7 +501,7 @@ function exportCSV(){
 db.suppliers=db.suppliers.map(x=>({...x,cnpj:x.cnpj||'Não informado'}));
 function renderAll(){renderSelects();renderSellers();renderSuppliers();renderMonthly();renderReports();renderLocations()}
 renderAll();
-try{if(sessionStorage.getItem('estoque_splash_seen')==='1')$('splashScreen').style.display='none';else setTimeout(enterApp,10000)}catch(e){setTimeout(enterApp,10000)}
+try{if(sessionStorage.getItem('estoque_splash_seen')==='1')$('splashScreen').style.display='none';else setTimeout(enterApp,5000)}catch(e){setTimeout(enterApp,5000)}
 initCloud();
 try{
   const hash=window.location.hash||'';
